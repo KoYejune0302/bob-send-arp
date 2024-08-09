@@ -8,6 +8,10 @@
 #include <unistd.h>
 #include <cstring>
 #include <ctime>
+#include <unordered_map>
+#include <set>
+#include <vector>
+#include <utility>
 #include "ethhdr.h"
 #include "arphdr.h"
 #include "mac.h"
@@ -132,14 +136,17 @@ void send_arp_reply(pcap_t* handle, Mac my_mac, Ip target_ip, Mac sender_mac, Ip
 }
 
 int main(int argc, char* argv[]) {
-	if (argc != 4) {
+	if (argc < 4) {
 		usage();
 		return -1;
 	}
 
+    if (argc % 2 != 0) {
+        fprintf(stderr, "Invalid number of arguments\n");
+        return -1;
+    }
+
     char* dev = argv[1];
-    Ip sender_ip(argv[2]);
-    Ip target_ip(argv[3]);
 
     Mac my_mac;
     Ip my_ip;
@@ -157,12 +164,40 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    Mac sender_mac = get_mac_of_sender(handle, dev, my_mac, my_ip, sender_ip);
-	printf("Sender ip address: %s\n", std::string(sender_ip).c_str());
-	printf("Sender MAC address: %s\n", std::string(sender_mac).c_str());
+    std::unordered_map<Ip, Mac> sender_ip_mac_map;
+    std::vector<std::pair<Ip, Ip>> sender_target_pairs;
 
-    send_arp_reply(handle, my_mac, target_ip, sender_mac, sender_ip);
+    for(int i = 2; i < argc; i += 2) {
+        Ip sender_ip(argv[i]);
+        Ip target_ip(argv[i+1]);
+        sender_target_pairs.push_back(std::make_pair(sender_ip, target_ip));
+        sender_ip_mac_map[sender_ip] = Mac::nullMac();
+    }
+
+    for (auto& entry : sender_ip_mac_map) {
+        Ip sender_ip = entry.first;
+        printf("Getting MAC for Sender IP: %s\n", std::string(sender_ip).c_str());
+        Mac sender_mac = get_mac_of_sender(handle, dev, my_mac, my_ip, sender_ip);
+        if (sender_mac == Mac::nullMac()) {
+            fprintf(stderr, "Failed to get MAC address for %s\n", std::string(sender_ip).c_str());
+        } else {
+            printf("Sender IP: %s has MAC: %s\n", std::string(sender_ip).c_str(), std::string(sender_mac).c_str());
+            sender_ip_mac_map[sender_ip] = sender_mac;
+        }
+    }
+
+    for (auto& pair : sender_target_pairs) {
+        Ip sender_ip = pair.first;
+        Ip target_ip = pair.second;
+        Mac sender_mac = sender_ip_mac_map[sender_ip];
+        if (sender_mac == Mac::nullMac()) {
+            fprintf(stderr, "Skipping ARP reply to %s due to unknown MAC address.\n", std::string(sender_ip).c_str());
+            continue;
+        }
+        send_arp_reply(handle, my_mac, target_ip, sender_mac, sender_ip);
+    }
 
     pcap_close(handle);
+
     return 0;
 }

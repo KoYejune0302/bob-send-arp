@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string>
+#include <functional>
 
 struct Ip final {
 	static const int SIZE = 4;
@@ -35,3 +36,12 @@ struct Ip final {
 protected:
 	uint32_t ip_;
 };
+
+namespace std {
+    template <>
+    struct hash<Ip> {
+        std::size_t operator()(const Ip& ip) const noexcept {
+            return std::hash<uint32_t>()(static_cast<uint32_t>(ip));
+        }
+    };
+}
