@@ -25,7 +25,6 @@ void usage() {
 	printf("sample : send-arp wlan0 192.168.10.2 192.168.10.1\n");
 }
 
-// Function to get the MAC and IP address of the interface
 bool get_mac_ip(const char* dev, Mac& mac, Ip& ip) {
     struct ifaddrs* ifap, * ifa;
     struct sockaddr_in* sa;
@@ -38,11 +37,11 @@ bool get_mac_ip(const char* dev, Mac& mac, Ip& ip) {
 
     for (ifa = ifap; ifa != nullptr; ifa = ifa->ifa_next) {
         if (strcmp(ifa->ifa_name, dev) == 0) {
-            if (ifa->ifa_addr->sa_family == AF_INET) {  // IP address
+            if (ifa->ifa_addr->sa_family == AF_INET) {
                 sa = (struct sockaddr_in*)ifa->ifa_addr;
                 ip = Ip(ntohl(sa->sin_addr.s_addr));
             }
-            else if (ifa->ifa_addr->sa_family == AF_PACKET) {  // MAC address
+            else if (ifa->ifa_addr->sa_family == AF_PACKET) {
                 sll = (struct sockaddr_ll*)ifa->ifa_addr;
                 mac = Mac(sll->sll_addr);
             }
@@ -53,7 +52,7 @@ bool get_mac_ip(const char* dev, Mac& mac, Ip& ip) {
     return true;
 }
 
-// Function to send an ARP request to get the MAC address of the sender IP
+
 Mac get_mac_of_sender(pcap_t* handle, const char* dev, Mac my_mac, Ip my_ip, Ip sender_ip) {
     EthArpPacket packet;
 
@@ -95,7 +94,7 @@ Mac get_mac_of_sender(pcap_t* handle, const char* dev, Mac my_mac, Ip my_ip, Ip 
         EthArpPacket* recv_packet = (EthArpPacket*)packet_data;
 
 
-        if (recv_packet->eth_.type() == 0x806 && 
+        if (recv_packet->eth_.type() == 0x0806 && 
 			recv_packet->arp_.op() == 0x02 &&
 			Ip(recv_packet->arp_.sip()) == sender_ip) {
             	return recv_packet->arp_.smac();
@@ -109,7 +108,6 @@ Mac get_mac_of_sender(pcap_t* handle, const char* dev, Mac my_mac, Ip my_ip, Ip 
     return Mac::nullMac();
 }
 
-// Function to send an ARP reply
 void send_arp_reply(pcap_t* handle, Mac my_mac, Ip target_ip, Mac sender_mac, Ip sender_ip) {
     EthArpPacket packet;
 
