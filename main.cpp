@@ -80,15 +80,7 @@ Mac get_mac_of_sender(pcap_t* handle, const char* dev, Mac my_mac, Ip my_ip, Ip 
     }
 
 	time_t start_time = time(nullptr);
-	int count = 0;
     while (true) {
-		if (count % 10 == 0) {
-			res = pcap_sendpacket(handle, reinterpret_cast<const u_char*>(&packet), sizeof(EthArpPacket));
-			if (res != 0) {
-				fprintf(stderr, "pcap_sendpacket return %d error=%s\n", res, pcap_geterr(handle));
-			}
-		}
-
         struct pcap_pkthdr* header;
         const u_char* packet_data;
         int res = pcap_next_ex(handle, &header, &packet_data);
@@ -104,9 +96,12 @@ Mac get_mac_of_sender(pcap_t* handle, const char* dev, Mac my_mac, Ip my_ip, Ip 
             	return recv_packet->arp_.smac();
 		}
 
-		if (difftime(time(nullptr), start_time) > 15) {
-            fprintf(stderr, "Timeout waiting for ARP reply\n");
-            break;
+		if (difftime(time(nullptr), start_time) > 5) {
+            res = pcap_sendpacket(handle, reinterpret_cast<const u_char*>(&packet), sizeof(EthArpPacket));
+			if (res != 0) {
+				fprintf(stderr, "pcap_sendpacket return %d error=%s\n", res, pcap_geterr(handle));
+			}
+            start_time = time(nullptr);
         }
     }
     return Mac::nullMac();
