@@ -29,7 +29,7 @@ void usage() {
 	printf("sample : send-arp wlan0 192.168.10.2 192.168.10.1\n");
 }
 
-bool get_mac_ip(const char* dev, Mac& mac, Ip& ip) {
+bool get_my_mac_ip(const char* dev, Mac& mac, Ip& ip) {
     struct ifaddrs* ifap, * ifa;
     struct sockaddr_in* sa;
     struct sockaddr_ll* sll;
@@ -145,7 +145,7 @@ int main(int argc, char* argv[]) {
 
     Mac my_mac;
     Ip my_ip;
-    if (!get_mac_ip(dev, my_mac, my_ip)) {
+    if (!get_my_mac_ip(dev, my_mac, my_ip)) {
         fprintf(stderr, "Failed to get MAC and IP address of interface %s\n", dev);
         return -1;
     }
