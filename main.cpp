@@ -1,12 +1,10 @@
 #include <cstdio>
 #include <pcap.h>
-#include <arpa/inet.h>
 #include <ifaddrs.h>
 #include <net/if.h>
 #include <netinet/in.h>
 #include <netpacket/packet.h>
 #include <unistd.h>
-#include <cstring>
 #include <ctime>
 #include <unordered_map>
 #include <set>
@@ -14,8 +12,6 @@
 #include <utility>
 #include "ethhdr.h"
 #include "arphdr.h"
-#include "mac.h"
-#include "ip.h"
 
 #pragma pack(push, 1)
 struct EthArpPacket final {
